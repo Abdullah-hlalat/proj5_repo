@@ -1,28 +1,24 @@
-from recommender import extract_skills, recommend_courses
+from database import get_user_skills
+from recommender import recommend_courses
 
 
-user_input = input("Enter your interests and skills: ")
+user_id = int(input("Enter user ID: "))
 
-skills = extract_skills(user_input)
+skills = get_user_skills(user_id)
 
-print("\nExtracted Skills:")
+print("\nUser Skills:")
 print(skills)
 
 if skills:
-
     recommendations = recommend_courses(skills)
 
     print("\nRecommended Courses:")
 
     for _, course in recommendations.iterrows():
         print(
-           course["title"],
-           "- Score:",
-           round(course["score"], 3),
-           "-",
-           course["explanation"]
-    )
-
+            course["title"],
+            "- Score:",
+            round(course["score"], 3)
+        )
 else:
-
-    print("No skills found.")
+    print("User has no skills.")
