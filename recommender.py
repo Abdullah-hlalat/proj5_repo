@@ -1,16 +1,14 @@
 import pandas as pd
 import numpy as np
+
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+
+from database import get_courses_with_embeddings
 
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-courses = pd.read_csv("data/courses.csv")
-
-course_embeddings = model.encode(
-    courses["description"].tolist()
-)
 
 def extract_skills(text):
 
@@ -35,23 +33,39 @@ def extract_skills(text):
 
 def recommend_courses(skills, top_n=3):
 
+    course_data = get_courses_with_embeddings()
+
     skill_embeddings = model.encode(skills)
 
-    user_vector = np.mean(skill_embeddings, axis=0)
+    user_vector = np.mean(
+        skill_embeddings,
+        axis=0
+    )
 
-    scores = cosine_similarity(
-        [user_vector],
-        course_embeddings
-    )[0]
+    results = []
 
-    results = courses.copy()
-    results["score"] = scores
+    for course in course_data:
+
+        score = cosine_similarity(
+            [user_vector],
+            [course["embedding"]]
+        )[0][0]
+
+        results.append({
+            "id": course["id"],
+            "title": course["title"],
+            "score": score
+        })
+
+    results = pd.DataFrame(results)
 
     results = results.sort_values(
         by="score",
         ascending=False
     ).head(top_n)
 
-    results["explanation"] = "Recommended based on similarity with your skills"
+    results["explanation"] = (
+        "Recommended based on similarity with your skills"
+    )
 
     return results

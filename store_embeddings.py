@@ -22,7 +22,11 @@ with engine.connect() as conn:
     ).first()
 
 
-if not existing:
+if existing:
+
+    print("Course embeddings already stored")
+
+else:
 
     for course in course_rows:
 
@@ -35,5 +39,4 @@ if not existing:
             vector
         )
 
-
-print("Course embeddings stored")
+    print("Course embeddings stored")

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Course Recommendation</title>
+</head>
+
+<body>
+
+    <h1>Course Recommendation System</h1>
+
+
+    <h2>Recommend From User ID</h2>
+
+    <input type="number" id="user_id" placeholder="Enter user id">
+
+    <button onclick="recommendUser()">
+        Recommend
+    </button>
+
+
+    <hr>
+
+
+    <h2>What Do You Want To Learn?</h2>
+
+    <input type="text" id="user_text"
+           placeholder="I want to learn machine learning">
+
+    <button onclick="recommendText()">
+        Find Courses
+    </button>
+
+
+    <div id="result"></div>
+
+
+<script>
+
+function showResult(data) {
+
+    let output = "";
+
+    if (data.error) {
+
+        output = "<p>" + data.error + "</p>";
+
+    }
+
+    else {
+
+        output += "<h2>Skills</h2>";
+
+        for (let skill of data.extracted_skills) {
+
+            output += "<p>" + skill + "</p>";
+
+        }
+
+
+        output += "<h2>Recommended Courses</h2>";
+
+        for (let course of data.recommended_courses) {
+
+            output += "<p>";
+
+            output += course.title;
+            output += " - Score: ";
+            output += course.score;
+
+            output += "</p>";
+
+        }
+
+    }
+
+    document.getElementById("result").innerHTML = output;
+
+}
+
+
+function recommendUser() {
+
+    let user_id =
+        document.getElementById("user_id").value;
+
+
+    fetch("/api/recommend", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            user_id: Number(user_id)
+        })
+
+    })
+
+    .then(response => response.json())
+
+    .then(data => showResult(data));
+
+}
+
+
+function recommendText() {
+
+    let user_text =
+        document.getElementById("user_text").value;
+
+
+    fetch("/api/recommend", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            user_text: user_text
+        })
+
+    })
+
+    .then(response => response.json())
+
+    .then(data => showResult(data));
+
+}
+
+</script>
+
+</body>
+
+</html>

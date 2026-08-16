@@ -2,44 +2,84 @@
 
 ## Project Overview
 
-This project is an AI-powered course recommendation system that suggests relevant courses based on a user's skills.
+This project is a course recommendation system that recommends courses based on a user's skills.
 
 The system uses:
-- Skill extraction
-- Sentence Transformer embeddings
-- Average pooling
-- Cosine similarity
-- SQLAlchemy Core
-- SQLite
-- Flask API
-- LangChain tools
-- LangGraph workflow
-- Fallback logic
-- Recommendation logging
 
-## Project Flow
+* Skill extraction
+* Sentence Transformer embeddings
+* Average pooling
+* Cosine similarity
+* SQLAlchemy Core
+* SQLite database
+* Flask API
+* Simple web interface
+* LangChain tools
+* LangGraph workflow
+* Fallback logic
+* Recommendation logging
 
-User ID / User Skills  
-→ Get Skills  
-→ Generate Skill Embeddings  
-→ Build User Profile Vector  
-→ Compare With Course Embeddings  
-→ Calculate Cosine Similarity  
-→ Rank Courses  
-→ Return Top 3 Recommendations  
+The user can get recommendations in two ways:
 
-## Day 1 - Core AI Engine
-
-Day 1 focuses on the recommendation logic.
-
-### Skill Extraction
-
-User skills are extracted from text using predefined skills.
+1. Enter a User ID and use the skills stored in the database.
+2. Enter text about what they want to learn.
 
 Example:
 
 ```text
-I know Python and machine learning
+I want to learn deep learning
+```
+
+The system extracts the skill and returns the Top 3 recommended courses.
+
+---
+
+## Project Flow
+
+```text
+User ID or User Text
+        ↓
+Get / Extract Skills
+        ↓
+Generate Skill Embeddings
+        ↓
+Build User Profile Vector
+        ↓
+Get Course Embeddings From Database
+        ↓
+Calculate Cosine Similarity
+        ↓
+Rank Courses
+        ↓
+Return Top 3 Recommendations
+```
+
+---
+
+# Day 1 - Core AI Engine
+
+Day 1 focuses on the recommendation logic.
+
+## Skill Extraction
+
+Skills can be extracted from user text using a predefined list of skills.
+
+The current skills are:
+
+```text
+python
+machine learning
+data analysis
+sql
+deep learning
+web development
+backend
+```
+
+Example input:
+
+```text
+I want to learn Python and machine learning
 ```
 
 Output:
@@ -48,7 +88,7 @@ Output:
 ['python', 'machine learning']
 ```
 
-### Embeddings
+## Embeddings
 
 The project uses the Sentence Transformer model:
 
@@ -56,24 +96,33 @@ The project uses the Sentence Transformer model:
 all-MiniLM-L6-v2
 ```
 
-User skills and course descriptions are converted into numerical embeddings.
+Skills and course descriptions are converted into numerical embeddings.
 
-### User Profile Vector
+Course embeddings are stored in the database.
 
-When a user has multiple skills, their embeddings are combined using average pooling.
+## User Profile Vector
 
-### Similarity and Ranking
+If the user has more than one skill, their skill embeddings are combined using average pooling.
 
-Cosine similarity compares the user profile vector with course embeddings.
+Example:
 
-Courses are ranked from the highest similarity score to the lowest.
+```text
+python + machine learning
+        ↓
+average pooling
+        ↓
+user profile vector
+```
 
-### Recommendation Output
+## Cosine Similarity
 
-The system returns the Top 3 courses with:
-- Course title
-- Similarity score
-- Short explanation
+The user profile vector is compared with the stored course embeddings using cosine similarity.
+
+The courses are then sorted from the highest similarity score to the lowest.
+
+## Recommendation Output
+
+The system returns the Top 3 courses.
 
 Example:
 
@@ -83,39 +132,143 @@ Python Basics - Score: 0.543
 Data Analysis with Python - Score: 0.442
 ```
 
-## Day 2 - Database and API
+---
 
-Day 2 connects the recommendation engine to a database and API.
+# Day 2 - Database and API
 
-### Database
+Day 2 connects the recommendation engine with the database and Flask API.
 
-SQLAlchemy Core and SQLite are used.
+## Database
 
-Tables:
-- users
-- skills
-- courses
-- user_skills
-- embeddings
-- recommendation_logs
+The project uses:
 
-Sample users:
-- Abdullah
-- Haya
+```text
+SQLAlchemy Core
+SQLite
+```
 
-The `user_skills` table connects users with their skills.
+Database file:
 
-Course embeddings are stored in the database.
+```text
+project5.db
+```
 
-### Flask API
+## Database Tables
 
-The API endpoint is:
+The database contains these tables:
+
+### users
+
+Stores the users.
+
+Example users:
+
+```text
+1 - Abdullah
+2 - Haya
+```
+
+### skills
+
+Stores the available skills.
+
+Example:
+
+```text
+python
+machine learning
+data analysis
+sql
+deep learning
+web development
+backend
+```
+
+### courses
+
+Stores the courses and their descriptions.
+
+### user_skills
+
+Connects users with their skills.
+
+This is a many-to-many relationship.
+
+```text
+users
+  |
+  | user_id
+  ↓
+user_skills
+  ↑
+  | skill_id
+  |
+skills
+```
+
+For example:
+
+```text
+Abdullah
+    ↓
+python
+machine learning
+```
+
+### embeddings
+
+Stores the embedding vector for each course.
+
+```text
+courses
+   |
+   | course_id
+   ↓
+embeddings
+```
+
+### recommendation_logs
+
+Stores recommendations generated by the workflow.
+
+It saves:
+
+```text
+user_id
+course_id
+score
+```
+
+Relationship:
+
+```text
+users
+   |
+   ↓
+recommendation_logs
+   ↑
+   |
+courses
+```
+
+---
+
+# Flask API
+
+The main API endpoint is:
 
 ```text
 POST /api/recommend
 ```
 
-Example request:
+The endpoint can receive either:
+
+* User ID
+* User text
+
+## User ID Example
+
+Request:
 
 ```json
 {
@@ -123,11 +276,19 @@ Example request:
 }
 ```
 
+The system gets the user's skills from the database.
+
+Example skills:
+
+```text
+python
+machine learning
+```
+
 Example response:
 
 ```json
 {
-  "user_id": 1,
   "extracted_skills": [
     "python",
     "machine learning"
@@ -137,28 +298,130 @@ Example response:
       "title": "Machine Learning Fundamentals",
       "score": 0.647,
       "explanation": "Recommended based on similarity with your skills"
+    },
+    {
+      "title": "Python Basics",
+      "score": 0.543,
+      "explanation": "Recommended based on similarity with your skills"
+    },
+    {
+      "title": "Data Analysis with Python",
+      "score": 0.442,
+      "explanation": "Recommended based on similarity with your skills"
     }
   ]
 }
 ```
 
-## Day 3 - Agents and Workflow
+## User Text Example
 
-Day 3 extends the system with LangChain and LangGraph.
+The API can also receive text.
 
-### LangChain Tools
+Request:
 
-Two tools are used:
-- Skill Agent
-- Recommendation Agent
+```json
+{
+  "user_text": "I want to learn deep learning"
+}
+```
 
-The Skill Agent gets user skills from the database.
+The system extracts:
 
-The Recommendation Agent generates course recommendations from the user's skills.
+```text
+deep learning
+```
 
-### LangGraph Workflow
+Then it generates recommendations.
 
-The workflow is:
+Example:
+
+```text
+Deep Learning Basics - Score: 0.743
+Machine Learning Fundamentals - Score: 0.357
+Web Development Basics - Score: 0.187
+```
+
+---
+
+# Web Interface
+
+The project includes a simple web interface using Flask and HTML.
+
+The web page has two options.
+
+## Option 1 - User ID
+
+The user enters an ID:
+
+```text
+User ID: 1
+```
+
+The system gets the user's saved skills from the database and recommends courses.
+
+## Option 2 - User Text
+
+The user can enter what they want to learn.
+
+Example:
+
+```text
+I want to learn deep learning
+```
+
+The system extracts the skill and displays the recommended courses.
+
+To open the web interface, run:
+
+```bash
+python3 api.py
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5000
+```
+
+---
+
+# Day 3 - Agents and Workflow
+
+Day 3 extends the project using LangChain and LangGraph.
+
+## LangChain Tools
+
+The project contains two tools.
+
+### Skill Agent
+
+The Skill Agent gets a user's skills from the database.
+
+```text
+User ID
+   ↓
+Skill Agent
+   ↓
+User Skills
+```
+
+### Recommendation Agent
+
+The Recommendation Agent receives skills and returns course recommendations.
+
+```text
+Skills
+   ↓
+Recommendation Agent
+   ↓
+Top Courses
+```
+
+---
+
+# LangGraph Workflow
+
+The project uses LangGraph to create a simple workflow.
 
 ```text
 START
@@ -172,23 +435,86 @@ Log Recommendations
 END
 ```
 
-### Fallback Logic
+The workflow:
 
-If a user does not have skills, the system returns no recommendations instead of failing.
+1. Gets the user's skills from the database.
+2. Sends the skills to the recommendation engine.
+3. Calculates the recommendations.
+4. Saves the recommendations in `recommendation_logs`.
 
-Example:
+Example workflow output:
 
-```json
+```text
 {
-  "error": "User has no skills"
+    'user_id': 1,
+    'skills': ['python', 'machine learning'],
+    'recommendations': [
+        {
+            'id': 3,
+            'title': 'Machine Learning Fundamentals',
+            'score': 0.647
+        },
+        {
+            'id': 1,
+            'title': 'Python Basics',
+            'score': 0.543
+        },
+        {
+            'id': 2,
+            'title': 'Data Analysis with Python',
+            'score': 0.442
+        }
+    ]
 }
 ```
 
-### Logging
+---
 
-Recommended courses and similarity scores are stored in the `recommendation_logs` table.
+# Fallback Logic
 
-## Project Files
+The API checks the input before generating recommendations.
+
+If the user does not enter a User ID or text:
+
+```json
+{
+  "error": "Enter user id or text"
+}
+```
+
+If no known skills are found:
+
+```json
+{
+  "error": "No known skills found. Try Python, SQL, machine learning, or deep learning."
+}
+```
+
+This prevents the recommendation system from failing when the input is invalid.
+
+---
+
+# Recommendation Logging
+
+The LangGraph workflow logs generated recommendations in the database.
+
+For every recommendation, the system stores:
+
+```text
+user_id
+course_id
+score
+```
+
+The information is saved in:
+
+```text
+recommendation_logs
+```
+
+---
+
+# Project Files
 
 ```text
 proj5_repo/
@@ -196,12 +522,15 @@ proj5_repo/
 ├── data/
 │   └── courses.csv
 │
+├── templates/
+│   └── index.html
+│
+├── agents.py
+├── api.py
+├── database.py
 ├── main.py
 ├── recommender.py
-├── database.py
 ├── store_embeddings.py
-├── api.py
-├── agents.py
 ├── workflow.py
 ├── project5.db
 ├── requirements.txt
@@ -210,61 +539,112 @@ proj5_repo/
 └── .gitignore
 ```
 
-## Setup Instructions
+## File Description
 
-### 1. Clone the repository
+```text
+recommender.py
+Recommendation logic, skill extraction, embeddings and cosine similarity.
+
+database.py
+Database tables, relationships and database functions.
+
+store_embeddings.py
+Generates and stores course embeddings in the database.
+
+api.py
+Flask API and web page routes.
+
+agents.py
+LangChain Skill Agent and Recommendation Agent.
+
+workflow.py
+LangGraph recommendation workflow and logging.
+
+templates/index.html
+Simple web interface.
+
+project5.db
+SQLite database.
+
+data/courses.csv
+Course dataset.
+```
+
+---
+
+# Setup Instructions
+
+## 1. Clone the Repository
 
 ```bash
 git clone git@github.com:Abdullah-hlalat/proj5_repo.git
+```
+
+Enter the project:
+
+```bash
 cd proj5_repo
 ```
 
-### 2. Create and activate a virtual environment
+## 2. Create Virtual Environment
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv venv
 ```
 
-### 3. Install requirements
+Activate it:
+
+```bash
+source venv/bin/activate
+```
+
+## 3. Install Requirements
 
 ```bash
 python3 -m pip install -r requirements.txt
 ```
 
-### 4. Create the database
+## 4. Create Database
 
 ```bash
 python3 database.py
 ```
 
-### 5. Store course embeddings
+## 5. Store Course Embeddings
 
 ```bash
 python3 store_embeddings.py
 ```
 
-### 6. Run the command-line test
+The program will display:
 
-```bash
-python3 main.py
+```text
+Course embeddings stored
 ```
 
-### 7. Run the Flask API
+or:
+
+```text
+Course embeddings already stored
+```
+
+## 6. Run the Flask Application
 
 ```bash
 python3 api.py
 ```
 
-The API runs locally at:
+Open:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-## API Testing
+---
 
-Example using curl:
+# API Testing
+
+## Test With User ID
 
 ```bash
 curl -X POST http://127.0.0.1:5000/api/recommend \
@@ -272,21 +652,77 @@ curl -X POST http://127.0.0.1:5000/api/recommend \
 -d '{"user_id": 1}'
 ```
 
-## Technologies
+## Test With User Text
 
-- Python
-- Pandas
-- NumPy
-- Sentence Transformers
-- Scikit-learn
-- SQLAlchemy Core
-- SQLite
-- Flask
-- LangChain
-- LangGraph
+```bash
+curl -X POST http://127.0.0.1:5000/api/recommend \
+-H "Content-Type: application/json" \
+-d '{"user_text": "I want to learn deep learning"}'
+```
 
-## Summary
+---
 
-The project recommends courses based on user skills using semantic similarity.
+# Workflow Testing
 
-It combines an AI recommendation engine with a relational database, Flask API, LangChain tools, LangGraph workflow, fallback handling, and recommendation logging.
+The LangGraph workflow can be tested using:
+
+```bash
+python3 -c "from workflow import workflow; print(workflow.invoke({'user_id': 1, 'skills': [], 'recommendations': []}))"
+```
+
+Example result:
+
+```text
+skills: ['python', 'machine learning']
+
+recommendations:
+Machine Learning Fundamentals
+Python Basics
+Data Analysis with Python
+```
+
+---
+
+# Technologies
+
+* Python
+* Pandas
+* NumPy
+* Sentence Transformers
+* Scikit-learn
+* SQLAlchemy Core
+* SQLite
+* Flask
+* HTML
+* LangChain
+* LangGraph
+
+---
+
+# Summary
+
+This project recommends courses based on user skills using semantic similarity.
+
+The system supports recommendations using either a saved User ID or user text.
+
+It combines:
+
+```text
+Skill Extraction
+        +
+Sentence Transformer Embeddings
+        +
+Cosine Similarity
+        +
+SQLAlchemy Database
+        +
+Flask API
+        +
+Web Interface
+        +
+LangChain Tools
+        +
+LangGraph Workflow
+```
+
+The final result is a simple course recommendation system that returns the Top 3 courses based on the user's skills.
